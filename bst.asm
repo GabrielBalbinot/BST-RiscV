@@ -8,10 +8,97 @@
 .global postorder
 .global main
 .data
-	nums: .word 49 13 85 90 88 37 12 0
+	nums: .word 37 5 13 85 90 88 0 110
 	size: .word 8
+	prefix_str: .space 256
 	solicitar_valor: .asciz "Digite um valor para buscar: "
+	
+	# prefixos para impressão de árvore
+	.P1: .asciz "|-- "
+	.P2: .asciz "+-- "
+	.P3: .asciz "|" 
+	.P4: .asciz " "
+	
+	
 .text
+
+j main
+
+printTree:
+	# a0 é o nó
+	# a1 é a profundidade
+	# a2 diz se é esquerda ou direita (0, 1)
+	# a3 diz se é raiz ou não
+	
+	addi sp sp -12
+	sw ra 0(sp)
+	sw a0 4(sp)
+	sw a1 8(sp)
+	
+	beqz a0 print_tree_ret
+	beqz a3 not_root
+	jal print_node
+	li a0 10
+	li a7 11
+	ecall
+	j rec
+	
+	not_root:
+	mv t0 a0
+	li t2 0 # contador
+	mv t3 a1 # profundidade
+	
+	print_spaces:
+		li a0 32
+		li a7 11
+		beq t2 t3 end_print_spaces
+		ecall
+		ecall
+		ecall
+		addi t2 t2 1
+		j print_spaces	
+	end_print_spaces:
+		bnez a2 print_dir
+		print_esq:
+		la a0 .P1
+		li a7 4
+		ecall
+		j .end
+		print_dir:			
+		la a0 .P2
+		li a7 4
+		ecall
+	.end:
+	mv a0 t0
+	jal print_node
+	li a0 10
+	li a7 11
+	ecall
+	rec:
+	lw a0 4(sp)
+	lw a1 8(sp)
+	addi a1 a1 1
+	li a2 0
+	li a3 0
+	lw a0 4(a0) # esq
+	jal printTree
+	
+	lw a0 4(sp)
+	lw a1 8(sp)
+	addi a1 a1 1
+	li a2 1
+	li a3 0
+	lw a0 8(a0) # dir
+	jal printTree
+	
+	
+	
+	print_tree_ret:
+	lw ra 0(sp)
+	lw a0 4(sp)
+	lw a1 8(sp)
+	addi sp sp 12
+	jr ra
 
 main:
 	
@@ -48,7 +135,11 @@ main:
 #	jal preorder
 #	jal inorder
 #	jal postorder		
-	
+	mv a0 s0
+	li a1 0
+	li a2 0
+	li a3 1
+	jal printTree
 	j end_program
 
 
@@ -328,17 +419,5 @@ postorder:
 		addi sp sp 8
 		jr ra
 	
-printTree:
-	# a0 é o nó
-	# a1 é a profundidade
-	
-	addi sp sp -12
-	sw ra 0(sp)
-	sw a0 4(sp)
-	sw a1 8(sp)
-	
-	beqz a0 print_tree_ret
-	
-	
-	print_tree_ret:
+
 	
