@@ -8,7 +8,7 @@
 .global postorder
 .global main
 .data
-	nums: .word 49 13 85 90 88 37 12 199
+	nums: .word 49 13 85 90 88 37 12 0
 	size: .word 8
 	solicitar_valor: .asciz "Digite um valor para buscar: "
 .text
@@ -20,7 +20,7 @@ main:
 	lw s2 0(s2)
 	li t4 0 # i
 	li a0 0
-	for:
+	for: 
 		beq s2 t4 end_for
 		slli t5 t4 2
 		add t5 t5 s1
@@ -34,37 +34,20 @@ main:
 	mv s0 a0 # ponteiro do head
 	
 	# solicitar valor
-	li a7 4
-	la a0 solicitar_valor
-	ecall
-	li a7 5
-	ecall
-	
-	mv a1 a0
-	mv a0 s0
-	jal searchNode	
-	beqz a0 end_search				
-	lw t0 0(a0)
-	
-	li a7 1
-	mv a0 t0
-	ecall
-	li a7 11
-	li a0 10
-	ecall
-	end_search:
-	mv a0 s0
-	jal findMin
-	
-	beqz a0 end_program
-	jal print_node
-	
-	mv a0 s0
-	jal findMax
-	
-	beqz a0 end_program
-	jal print_node
-	
+	#li a7 4
+#	la a0 solicitar_valor
+#	ecall
+##	li a7 5
+#	ecall
+#	mv a1 a0
+#	mv a0 s0
+#	jal delete_node
+#	
+#	mv s0 a0
+#	
+#	jal preorder
+#	jal inorder
+#	jal postorder		
 	
 	j end_program
 
@@ -72,7 +55,7 @@ main:
 createNode:
 	# a1 é o valor a ser adicionado
 	li a7 9 # sbrk (malloc)
-	li a0 12 # 12 bytes: valor, left, right
+	li a0 12 # 12 bytes (3 words): valor, left, right
 	ecall
 	sw a1 0(a0)
 	sw zero 4(a0)
@@ -86,28 +69,28 @@ insertNode:
 	sw ra 0(sp)
 	sw a0 4(sp)	
 	
-	beqz a0 nodeNull
+	beqz a0 first_node
 	lw t0 0(a0) # t0 é o valor do node
 
-	bge a1 t0 right
-	left:
+	bge a1 t0 right_insert
+	left_insert:
 		lw a0 4(a0) # load do left
 		jal insertNode
 		lw t1 4(sp)
 		sw a0 4(t1)
-		j end
-	right:
+		j end_insert
+	right_insert:
 		lw a0 8(a0) # load do right
 		jal insertNode
 		lw t1 4(sp)
 		sw a0 8(t1)
-		j end
-	nodeNull:
+		j end_insert
+	first_node:
 	# só ocorre na inserção do primeiro valor (head)
 		jal createNode
-		j end
+		j end_insert
 	
-	end:
+	end_insert:
 		lw t1 4(sp)
 		beqz t1 return_insert
 		mv a0 t1
@@ -116,52 +99,95 @@ insertNode:
 		addi sp sp 8
 		jr ra
 
-deleteNode:
-	# a1 valor a ser deletado
-	# a0 endereço do nó
-	addi sp sp -8
-	sw ra 0(sp)
-	sw a0 4(sp)
-	
-	beqz a0 return_delete
-	
-	lw t0 0(a0)
-	
-	bne t0 a1 neq # not equal
-	
-	# a fazer deleção em três casos:
-	# 1. node é folha (return null)
-	# 2. node tem só um filho (este filho vira o node)
-	# 3. node tem dois filhos (achar o menor da esquerda e "promover")
-	# 3.. pode apenas alterar o valor do node atual e excluir o antigo que era o min
-	lw t1 4(a0)
-	lw t2 8(a0)
-	
-	
-	neq:
-		bgt t0 a1 right_delete
-		
-	left_delete:
-		lw a0 4(sp)
-		jal deleteNode
-		j return_delete
-		
-	right_delete:
-		lw a0 8(sp)
-		jal deleteNote
-		j return_delete	
-		
-	return_delete:
-		lw ra 0(sp)
-		addi sp sp 8
-		jr ra
+delete_node:
+    # a0 = nó atual, a1 = valor a deletar
+    addi sp, sp, -8
+    sw   ra, 0(sp)
+    sw   a0, 4(sp)
+
+    beqz a0, return_del    # nó null, não encontrou
+
+    lw   t0, 0(a0)         # valor do nó atual
+    blt  a1, t0, del_left
+    bgt  a1, t0, del_right
+
+    # encontrou o nó
+    lw   t1, 4(a0)         # left
+    lw   t2, 8(a0)         # right
+
+    # caso 1: folha
+    bnez t1, tem_esq
+    bnez t2, tem_dir
+    li   a0, 0             # retorna null pro pai
+    j    return_del
+
+    # caso 2: só filho direito
+tem_dir:
+    beqz t1, so_direito
+
+    # caso 2: só filho esquerdo
+tem_esq:
+    beqz t2, so_esquerdo
+
+    # caso 3: dois filhos — acha sucessor (menor da subárvore direita)
+dois_filhos:
+    lw   t3, 8(a0)         # t3 = subárvore direita
+find_min:
+    lw   t4, 4(t3)         # t4 = left do candidato
+    beqz t4, achou_min
+    mv   t3, t4
+    j    find_min
+achou_min:
+    lw   t4, 0(t3)         # t4 = valor do sucessor
+    lw   t5, 4(sp)         # restaura nó atual
+    sw   t4, 0(t5)         # substitui valor pelo sucessor
+
+    # deleta o sucessor na subárvore direita
+    lw   a0, 8(t5)         # a0 = subárvore direita
+    mv   a1, t4            # a1 = valor do sucessor
+    jal  ra, delete_node
+    lw   t5, 4(sp)         # restaura nó atual
+    sw   a0, 8(t5)         # atualiza filho direito
+    mv   a0, t5            # retorna nó atual
+    j    return_del
+
+so_direito:
+    mv   a0, t2            # retorna filho direito pro pai
+    j    return_del
+
+so_esquerdo:
+    mv   a0, t1            # retorna filho esquerdo pro pai
+    j    return_del
+
+del_left:
+    lw   a0, 4(a0)
+    jal  ra, delete_node
+    lw   t1, 4(sp)
+    sw   a0, 4(t1)         # pai.left = retorno
+    mv   a0, t1
+    j    return_del
+
+del_right:
+    lw   a0, 8(a0)
+    jal  ra, delete_node
+    lw   t1, 4(sp)
+    sw   a0, 8(t1)         # pai.right = retorno
+    mv   a0, t1
+
+return_del:
+    lw   ra, 0(sp)
+    addi sp, sp, 8
+    jr   ra
 
 end_program:
 	li a7 10
 	ecall
 	
 searchNode:
-
+	# searchNode é a função de busca
+	# search_node é uma label para facilitar o direcionamento
+	# e compreensão do código
+	
 	addi sp sp -4
 	sw ra 0(sp)
 	beqz a0 return_search	
@@ -171,21 +197,22 @@ searchNode:
 	bgt a1 t0 search_right
 	search_left:
 		lw a0 4(a0)
-		j recursion
+		j search_node
 	search_right:
 		lw a0 8(a0)
-	recursion:
+	search_node: 
 		jal searchNode	
 	return_search:
-	lw ra 0(sp)
-	addi sp sp 4
-	jr ra	
+		lw ra 0(sp)
+		addi sp sp 4
+		jr ra	
 
 findMax:
-
+	# empurra o valor de ra para stack
 	addi sp sp -4
 	sw ra 0(sp)
-
+	
+	# caso o nó ou o valor ou o endereço da direita sejam iguais a zero, achamos o maior valor da árvore
 	beqz a0 end_findMax	
 	lw t0 8(a0)
 	beqz t0 end_findMax
@@ -198,10 +225,11 @@ findMax:
 		jr ra
 		
 findMin:
-
+	# empurra o valor de ra para stack
 	addi sp sp -4
 	sw ra 0(sp)
-
+	
+	# caso o nó ou o valor ou o endereço da esquerda sejam iguais a zero, achamos o maior valor da árvore
 	beqz a0 end_findMin	
 	lw t0 4(a0)
 	beqz t0 end_findMin
@@ -251,8 +279,7 @@ preorder:
 		jr ra	
 	
 	
-inorder:
-	
+inorder:	
 	addi sp sp -8
 	sw ra 0(sp)
 	sw a0 4(sp)	
@@ -265,7 +292,7 @@ inorder:
 	
 	lw a0 4(sp)
 	jal print_node
-	# erro aqui: se node for null (0) tenta acessar endereço "proibido"
+	
 	lw a0 4(sp)
 	lw a0 8(a0)
 	jal inorder	
@@ -291,6 +318,7 @@ postorder:
 	lw a0 4(sp)
 	lw a0 8(a0)
 	jal postorder
+	
 	lw a0 4(sp)
 	jal print_node
 	
@@ -300,6 +328,17 @@ postorder:
 		addi sp sp 8
 		jr ra
 	
+printTree:
+	# a0 é o nó
+	# a1 é a profundidade
+	
+	addi sp sp -12
+	sw ra 0(sp)
+	sw a0 4(sp)
+	sw a1 8(sp)
+	
+	beqz a0 print_tree_ret
 	
 	
+	print_tree_ret:
 	
