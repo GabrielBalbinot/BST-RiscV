@@ -1,4 +1,3 @@
-.global createNode
 .global insertNode
 .global searchNode
 .global deleteNode
@@ -8,69 +7,16 @@
 .global preorder
 .global inorder
 .global postorder
-.global main
 .data
-	nums: .word 37 5 13 85 90 88 0 110
-	size: .word 8
-	prefix_str: .space 256
-	solicitar_valor: .asciz "Digite um valor para buscar: "
-	
-	# prefixos para impressão da árvore
+	# prefixos para impress o da  rvore
 	
 	# caso os símbolos não funcionem corretamente (?)
 	# utilize o padrão abaixo comentado	
-	.P1: .asciz "├── " 
-	.P2: .asciz "└── "	
-	#.P1: .asciz "|-- "
-	#.P2: .asciz "`-- "	
-	
+	#.P1: .asciz "├── "
+	#.P2: .asciz "└── "	
+	.P1: .asciz "|-- "
+	.P2: .asciz "`-- "	
 .text
-
-j main
-
-main:
-	
-	la s1 nums
-	la s2 size
-	lw s2 0(s2)
-	li t4 0 # i
-	li a0 0
-	for: 
-		beq s2 t4 end_for
-		slli t5 t4 2
-		add t5 t5 s1
-		lw t5 0(t5)
-		mv a1 t5
-		jal insertNode
-		addi t4 t4 1
-		j for
-	end_for:
-	
-	mv s0 a0 # ponteiro do head
-	
-	# solicitar valor
-	#li a7 4
-#	la a0 solicitar_valor
-#	ecall
-##	li a7 5
-#	ecall
-#	mv a1 a0
-#	mv a0 s0
-#	jal deleteNode
-#	
-#	mv s0 a0
-#	
-#	jal preorder
-#	jal inorder
-#	jal postorder		
-	mv a0 s0
-	li a1 0
-	li a2 0
-	li a3 1
-	jal printTree
-	j end_program
-
-
 createNode:
 	# a1 = valor a ser incluído
 	li a7 9 # sbrk (malloc)
@@ -163,7 +109,7 @@ deleteNode:
     # deleta o sucessor na subarvore direita
     lw   a0 8(t5)         # a0 = subarvore direita
     mv   a1 t4            # a1 = valor do sucessor
-    jal  ra deleteNode
+    jal  deleteNode
     lw   t5 4(sp)         # restaura node atual
     sw   a0 8(t5)         # atualiza filho direito
     mv   a0 t5            # retorna node atual
@@ -179,7 +125,7 @@ deleteNode:
 
 	del_left:
     	lw   a0 4(a0)
-    	jal  ra deleteNode
+    	jal  deleteNode
     	lw   t1 4(sp)
     	sw   a0 4(t1)         # node->left = retorno
     	mv   a0 t1
@@ -187,7 +133,7 @@ deleteNode:
 
 	del_right:
     	lw   a0 8(a0)
-    	jal  ra deleteNode
+    	jal deleteNode
     	lw   t1 4(sp)
     	sw   a0 8(t1)         # node->right = retorno
     	mv   a0 t1
@@ -197,11 +143,10 @@ deleteNode:
     	addi sp sp 8
     	jr   ra
 
-end_program:
-	li a7 10
-	ecall
-	
-searchNode:	
+searchNode:
+	# a0 o root e nodes subsequentes
+	# a1 o valor a ser buscado
+	# a0 ser  o endere o de retorno, se for 0, então não existe
 	addi sp sp -4
 	sw ra 0(sp)
 	beqz a0 return_search	
