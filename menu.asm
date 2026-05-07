@@ -2,7 +2,7 @@
 	# menus
 	_menu: .asciz "1- Insert\n2- Delete\n3- Search\n4- Preorder\n"
 	_menu.1: .asciz "5- Inorder\n6- Postorder\n7- Full tree\n"
-	_menu.2: .asciz "8- Maximum\n9- Minimum\n0- Leave\n"
+	_menu.2: .asciz "8- Maximum\n9- Minimum\n0- Leave\n\n"
 	
 	# inputs
 	_scanf: .asciz "Type a value: "
@@ -24,7 +24,11 @@ main:
 	
 	menu:
 		j printMenu
-	
+	continue_menu:
+		li a7 11
+		li a0 10
+		ecall
+		j menu
 	
 	end_menu:
 		# restore s0 and lost the reference to root of tree
@@ -42,13 +46,12 @@ printMenu:
 		ecall
 		la a0 _menu.2
 		ecall
-
-
 		
 inputMenu:
 
 	li a7 5
 	ecall
+	
 	
 	beqz a0 end_menu
 	
@@ -78,7 +81,7 @@ inputMenu:
 	
 	li t6 9
 	beq a0 t6 min
-	j menu
+	j continue_menu
 
 inputValue:
 	la a0 _scanf
@@ -108,7 +111,7 @@ insert:
 	ecall	
 	
 	end_insert_:
-	j menu
+	j continue_menu
 	
 delete:
 	jal inputValue
@@ -117,7 +120,7 @@ delete:
 	
 	jal deleteNode
 	mv s0 a0
-	j menu
+	j continue_menu
 	
 search:
 	jal inputValue
@@ -147,26 +150,41 @@ search:
 	ecall
 	
 	end_search:
-	j menu
+	j continue_menu
 	
 pre:
 	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal preorder
-	j menu
+	# \n
+	li a7 11
+	li a0 10
+	ecall
+	
+	j continue_menu
 in:
 	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal inorder
-	j menu
+	# \n
+	li a7 11
+	li a0 10
+	ecall
+	
+	j continue_menu
 post:
 	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal postorder
-	j menu
+	# \n
+	li a7 11
+	li a0 10
+	ecall
+	
+	j continue_menu
 
 arvoreToda:
 	beqz s0 emptyTree
@@ -176,7 +194,7 @@ arvoreToda:
 	li a2 -1 # not left nor right
 	li a3 1 # root
 	jal printTree
-	j menu
+	j continue_menu
 	
 max:
 	beqz s0 emptyTree
@@ -199,7 +217,7 @@ max:
 	li a0 10
 	li a7 11
 	ecall
-	j menu
+	j continue_menu
 	
 min:
 	beqz s0 emptyTree
@@ -222,7 +240,7 @@ min:
 	li a0 10
 	li a7 11
 	ecall
-	j menu
+	j continue_menu
 	
 
 emptyTree:
@@ -232,4 +250,4 @@ emptyTree:
 	ecall
 	la a0 _emptyTreeOps
 	ecall	
-	j menu	
+	j continue_menu	
