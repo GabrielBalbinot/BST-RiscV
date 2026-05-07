@@ -1,34 +1,34 @@
 .data	
 	# menus
-	_menu: .asciz "1- Inserir\n2- Remover\n3- Buscar\n4- Preorder\n"
-	_menu.1: .asciz "5- Inorder\n6- Postorder\n7- Árvore completa\n"
-	_menu.2: .asciz "8- Máximo\n9- Minímo\n0- Sair\n"
+	_menu: .asciz "1- Insert\n2- Delete\n3- Search\n4- Preorder\n"
+	_menu.1: .asciz "5- Inorder\n6- Postorder\n7- Full tree\n"
+	_menu.2: .asciz "8- Maximum\n9- Minimum\n0- Leave\n"
 	
 	# inputs
-	_scanf: .asciz "Digite um valor: "
+	_scanf: .asciz "Type a value: "
 	
 	# outputs
-	_valueAlreadyExists_str: .asciz "Este valor já está presente na árvore\n"
-	_valueNotExists: .asciz "Valor não encontrado\n"
-	_valueAtAddress: .asciz "O valor está no endereço: "
-	_maxOutput: .asciz "O maior valor é: "
-	_minOutput: .asciz "O menor valor é: "
-	_arvoreVazia: .asciz "A árvore está vazia. "
-	_arvoreVaziaOps: .asciz "Apenas a operação de inserir está disponível\n"
+	_valueAlreadyExists_str: .asciz "This value is already on the tree\n"
+	_valueNotExists: .asciz "Value not found\n"
+	_valueAtAddress: .asciz "The value is at the address: "
+	_maxOutput: .asciz "The max value is: "
+	_minOutput: .asciz "The min value is: "
+	_emptyTree: .asciz "The tree is empty\n"
+	_emptyTreeOps: .asciz "Just the insert operation is available\n"
 .global main
 .text
 main:
 	addi sp sp -4
-	sw s0 0(sp) # armazenando s0 
-	mv s0 zero # inicializa o root
+	sw s0 0(sp) # storing s0 
+	mv s0 zero # initialize root = null
 	
 	menu:
 		j printMenu
 	
 	
 	end_menu:
-		# além de restaurar s0, perdemos a referência do root da árvore
-		# desta forma "limpando" todos os dados da árvore
+		# restore s0 and lost the reference to root of tree
+		# essentially cleaning the tree, as there is no syscall such as free 
 		lw s0 0(sp) 
 		addi sp sp 4
 		li a7 10
@@ -42,6 +42,8 @@ printMenu:
 		ecall
 		la a0 _menu.2
 		ecall
+
+
 		
 inputMenu:
 
@@ -148,36 +150,36 @@ search:
 	j menu
 	
 pre:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal preorder
 	j menu
 in:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal inorder
 	j menu
 post:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal postorder
 	j menu
 
 arvoreToda:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
-	li a1 0 # profundidade = 0
-	li a2 -1 # nem esq nem dir
+	li a1 0 # depth = 0
+	li a2 -1 # not left nor right
 	li a3 1 # root
 	jal printTree
 	j menu
 	
 max:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal findMax
@@ -185,11 +187,11 @@ max:
 	mv t0 a0	
 	lw t1 0(t0)
 	
-	# print "O maior valor: "
+	# print "The max value: "
 	la a0 _maxOutput
 	li a7 4
 	ecall
-	# print do maior valor
+	# print max value
 	mv a0 t1
 	li a7 1
 	ecall
@@ -200,7 +202,7 @@ max:
 	j menu
 	
 min:
-	beqz s0 arvoreVazia
+	beqz s0 emptyTree
 	
 	mv a0 s0
 	jal findMin
@@ -208,11 +210,11 @@ min:
 	mv t0 a0	
 	lw t1 0(t0)
 	
-	# print "O menor valor"
+	# print "The min value"
 	la a0 _minOutput
 	li a7 4
 	ecall
-	# print do menor valor
+	# print min value
 	mv a0 t1
 	li a7 1
 	ecall
@@ -223,11 +225,11 @@ min:
 	j menu
 	
 
-arvoreVazia:
+emptyTree:
 	
 	li a7 4
-	la a0 _arvoreVazia
+	la a0 _emptyTree
 	ecall
-	la a0 _arvoreVaziaOps
+	la a0 _emptyTreeOps
 	ecall	
 	j menu	

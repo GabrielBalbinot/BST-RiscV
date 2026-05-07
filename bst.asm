@@ -8,19 +8,19 @@
 .global inorder
 .global postorder
 .data
-	# prefixos para impress o da  rvore
+	# prefixes to print tree
 	
-	# caso os símbolos não funcionem corretamente (?)
-	# utilize o padrão abaixo comentado	
-	#.P1: .asciz "├── "
-	#.P2: .asciz "└── "	
-	.P1: .asciz "|-- "
-	.P2: .asciz "`-- "	
+	# in case these symbols do not work on your terminal,
+	# try the commented ones below them
+	.P1: .asciz "├── "
+	.P2: .asciz "└── "	
+	#.P1: .asciz "|-- "
+	#.P2: .asciz "`-- "	
 .text
 createNode:
-	# a1 = valor a ser incluído
+	# a1 = value to insert
 	li a7 9 # sbrk (malloc)
-	li a0 12 # 12 bytes (3 words): valor, left, right
+	li a0 12 # 12 bytes (3 words): value, left, right
 	ecall
 	sw a1 0(a0)
 	sw zero 4(a0)
@@ -29,7 +29,7 @@ createNode:
 	
 insertNode:
 	# a0 = node
-	# a1 valor a ser inserido
+	# a1 value to insert
 	addi sp sp -8
 	sw ra 0(sp)
 	sw a0 4(sp)	
@@ -39,23 +39,23 @@ insertNode:
 
 	bge a1 t0 right_insert
 	left_insert:
-		lw a0 4(a0) # load do left
+		lw a0 4(a0) # load left address
 		jal insertNode
 		lw t1 4(sp)
 		sw a0 4(t1)
 		j end_insert
 	right_insert:
-		lw a0 8(a0) # load do right
+		lw a0 8(a0) # load right address
 		jal insertNode
 		lw t1 4(sp)
 		sw a0 8(t1)
 		j end_insert
 	first_node:
-	# ocorre apenas ao inserir o primeiro valor (root)
+	# occurs only the first insert (tree empty)
 		jal createNode
 	
 	end_insert:
-		lw t1 4(sp) # não lembro o que faz aqui...
+		lw t1 4(sp) # n lembro o que faz aqui...
 		beqz t1 return_insert
 		mv a0 t1
 	return_insert:
@@ -64,89 +64,89 @@ insertNode:
 		jr ra
 
 deleteNode:
-    # a0 = node, a1 = valor a deletar
+    # a0 = node, a1 = value to delete
     addi sp sp -8
-    sw   ra 0(sp)
-    sw   a0 4(sp)
+    sw ra 0(sp)
+    sw a0 4(sp)
 
-    beqz a0 return_del    # root null, valor inexistente
+    beqz a0 return_delete    # root null, value do not exist
 
-    lw   t0 0(a0)         # node->val
-    blt  a1 t0 del_left
-    bgt  a1 t0 del_right
+    lw t0 0(a0)         # node->val
+    blt a1 t0 delete_left
+    bgt a1 t0 delete_right
 
-    # encontrou o node
-    lw   t1 4(a0)         # left
-    lw   t2 8(a0)         # right
+    # found the node
+    lw t1 4(a0)         # left
+    lw t2 8(a0)         # right
 
-    # caso 1: folha
-    bnez t1 tem_esq
-    bnez t2 tem_dir
-    li   a0 0             # retorna null pro node
-    j    return_del
+    # case 1: leaf
+    bnez t1 has_left
+    bnez t2 has_right
+    li a0 0             # retorn null to node
+    j return_delete
 
-    # caso 2.1: apenas filho direito
-	tem_dir:
-    	beqz t1 so_direito
+    # case 2.1: just right child
+	has_right:
+    	beqz t1 just_right_child
 
-    # caso 2.2: apenas filho esquerdo
-	tem_esq:
-	    beqz t2 so_esquerdo
+    # case 2.2: just left child
+	has_left:
+	    beqz t2 just_left_child
 
-    # caso 3: dois filhos = achar sucessor (menor da subarvore direita)
-	dois_filhos:
-    	lw   t3 8(a0)         # t3 = subarvore direita
+    # case 3: two childs = find successor (lowest value of right subtree direita)
+	both_childs:
+    	lw t3 8(a0) # t3 = right subtree
 	find_min:
-    	lw   t4 4(t3)         # t4 = left do candidato
-    	beqz t4 achou_min
-    	mv   t3 t4
-    	j    find_min
-	achou_min:
-    	lw   t4 0(t3)         # t4 = valor do sucessor
-    	lw   t5 4(sp)         # restaura node atual
-    	sw   t4 0(t5)         # substitui valor pelo sucessor
+    	lw t4 4(t3)         # t4 = node->left
+    	beqz t4 min_found
+    	mv t3 t4
+    	j find_min
+	min_found:
+    	lw t4 0(t3)         # t4 = successor value
+    	lw t5 4(sp)         # restore actual node
+    	sw t4 0(t5)         # replace value with successor
+	
+	# deletes the successor in right subtree
+    lw a0 8(t5)         # a0 = right subtree
+    mv a1 t4            # a1 = successor value
+    jal deleteNode
+    lw t5 4(sp)         # restore actual node
+    sw a0 8(t5)         # updates right child
+    mv a0 t5            # returns actual node
+    j return_delete
 
-    # deleta o sucessor na subarvore direita
-    lw   a0 8(t5)         # a0 = subarvore direita
-    mv   a1 t4            # a1 = valor do sucessor
-    jal  deleteNode
-    lw   t5 4(sp)         # restaura node atual
-    sw   a0 8(t5)         # atualiza filho direito
-    mv   a0 t5            # retorna node atual
-    j    return_del
+	just_right_child:
+    	mv a0 t2            # returns right child
+	    j return_delete
 
-	so_direito:
-    	mv   a0 t2            # retorna filho direito pro node
-	    j    return_del
+	just_left_child:
+    	mv a0 t1            # returns left child
+    	j return_delete
 
-	so_esquerdo:
-    	mv   a0 t1            # retorna filho esquerdo pro node
-    	j    return_del
-
-	del_left:
-    	lw   a0 4(a0)
-    	jal  deleteNode
-    	lw   t1 4(sp)
-    	sw   a0 4(t1)         # node->left = retorno
-    	mv   a0 t1
-    	j    return_del
-
-	del_right:
-    	lw   a0 8(a0)
+	delete_left:
+    	lw a0 4(a0)
     	jal deleteNode
-    	lw   t1 4(sp)
-    	sw   a0 8(t1)         # node->right = retorno
-    	mv   a0 t1
+    	lw t1 4(sp)
+    	sw a0 4(t1)         
+    	mv a0 t1
+    	j return_delete
 
-	return_del:
-    	lw   ra 0(sp)
+	delete_right:
+    	lw a0 8(a0)
+    	jal deleteNode
+    	lw t1 4(sp)
+    	sw a0 8(t1)         
+    	mv a0 t1
+
+	return_delete:
+    	lw ra 0(sp)
     	addi sp sp 8
-    	jr   ra
+    	jr ra
 
 searchNode:
-	# a0 o root e nodes subsequentes
-	# a1 o valor a ser buscado
-	# a0 ser  o endere o de retorno, se for 0, então não existe
+	# a0 root and nodes
+	# a1 value to search
+	# a0 return address, if a0=0, then the value is not present in the tree
 	addi sp sp -4
 	sw ra 0(sp)
 	beqz a0 return_search	
@@ -202,7 +202,7 @@ print_node:
 	beqz a0 return_print_node
 	
 	li a7 1
-	mv t1 a0 # endereço do node
+	mv t1 a0 # node address
 	lw a0 0(a0) # node->value
 	ecall
 	li a7 11
@@ -214,9 +214,9 @@ print_node:
 	
 printTree:
 	# a0 = node
-	# a1 = profundidade
-	# a2 = esquerda ou direita (0 ou 1, respectivamente)
-	# a3 = raiz? (0 ou 1)
+	# a1 = depth
+	# a2 = left or right (0 ou 1, respectively)
+	# a3 = is Root? (0 or 1)
 	
 	addi sp sp -12
 	sw ra 0(sp)
@@ -234,9 +234,13 @@ printTree:
 	
 	not_root:
 	mv t0 a0
-	li t2 0 # contador
-	mv t3 a1 # profundidade
+	li t2 0 # counter
+	mv t3 a1 # depth
 	
+	# this code section nominated print_spaces
+	# is designed to make the format of a tree in the output
+	# by printing three ' ' for each depth
+	# if depth = 3, there will be 9 blank spaces... 
 	print_spaces:
 		li a0 32
 		li a7 11
@@ -269,15 +273,16 @@ printTree:
 	ecall
 	
 	printTree_nextNodes:	
-	# carregar os valores necessários para acessar o lado esquerdo da árvore
+	# load left address to access the left subtree
 		lw a0 4(sp) # node
-		lw a1 8(sp) # profundidade
-		addi a1 a1 1 # profunidade++
+		lw a1 8(sp) # depth
+		addi a1 a1 1 # depth++
 		li a2 0
 		li a3 0
 		lw a0 4(a0) # node->left
 		jal printTree
-	
+		
+	# load right address to access the left subtree
 		lw a0 4(sp)
 		lw a1 8(sp)
 		addi a1 a1 1
