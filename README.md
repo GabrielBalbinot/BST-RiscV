@@ -43,8 +43,9 @@ menu.asm    → programa principal com menu interativo
 
 #### Via terminal
 
+Em [nomeJar.jar]: coloque o nome do arquivo .jar que irá utilizar. Por ex: "rars1_6.jar"
 ```bash
-java -jar rars.jar menu.asm bst.asm
+java -jar [nomeJar.jar] menu.riscv bst.riscv
 ```
 
 > ⚠️ Os dois arquivos devem estar na mesma pasta que o `rars.jar`.
@@ -105,9 +106,9 @@ menu.asm    → main program with interactive menu
 ### How to run
 
 #### Via terminal
-
+In [jarName.jar]: put the file name of the .jar file. eg: "rars1_6.jar"
 ```bash
-java -jar rars.jar menu.asm bst.asm
+java -jar [jarName.jar] menu.riscv bst.riscv
 ```
 
 > ⚠️ Both files must be in the same folder as `rars.jar`.
